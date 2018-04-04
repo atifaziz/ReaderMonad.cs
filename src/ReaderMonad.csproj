@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard1.0</TargetFramework>
+    <VersionPrefix>0.1.0</VersionPrefix>
+    <LangVersion>7.0</LangVersion>
+    <Description>Reader mondad for .NET Standard</Description>
+    <PackageOutputPath>..\dist</PackageOutputPath>
+    <Copyright>Copyright 2018 Atif Aziz. All rights reserved.</Copyright>
+    <Authors>Atif Aziz</Authors>
+    <Owners>Atif Aziz</Owners>
+    <PackageProjectUrl>https://github.com/atifaziz/ReaderMonad.cs</PackageProjectUrl>
+    <PackageOutputPath>..\dist</PackageOutputPath>
+    <IncludeSymbols>true</IncludeSymbols>
+    <IncludeSource>true</IncludeSource>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <OutputPath>..\bin\Debug\</OutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <OutputPath>..\bin\Release\</OutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="..\COPYING.txt" Link="COPYING.txt">
+      <PackagePath />
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.ValueTuple" Version="4.4.0" />
+  </ItemGroup>
+
+</Project>

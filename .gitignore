@@ -1,0 +1,60 @@
+# Autosave files
+*~
+
+# build
+[Oo]bj/
+[Bb]in/
+packages/
+dist/
+TestResults/
+
+# globs
+*.DS_Store
+*.sln.cache
+*.suo
+*.cache
+*.pidb
+*.userprefs
+*.usertasks
+*.user
+*.tar.gz
+tarballs/
+test-results/
+Thumbs.db
+*.nupkg
+
+# Mac bundle stuff
+*.dmg
+*.app
+
+# resharper
+*_Resharper.*
+*.Resharper
+
+# rider
+.idea/
+
+# dotCover
+*.dotCover
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# .NET Core
+project.lock.json
+project.fragment.lock.json
+artifacts/
+**/Properties/launchSettings.json
+
+
+# VisualStudioCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history
