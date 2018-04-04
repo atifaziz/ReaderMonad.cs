@@ -18,37 +18,39 @@ namespace ReaderMonad
 {
     using System;
 
-    public interface IReader<in E, out T>
+    public interface IReader<in TEnv, out T>
     {
-        T Read(E env);
+        T Read(TEnv env);
     }
 
-    sealed class Reader<E, T> : IReader<E, T>
+    sealed class Reader<TEnv, T> : IReader<TEnv, T>
     {
-        readonly Func<E, T> _reader;
-        public Reader(Func<E, T> reader) =>
+        readonly Func<TEnv, T> _reader;
+
+        public Reader(Func<TEnv, T> reader) =>
             _reader = reader ?? throw new ArgumentNullException(nameof(reader));
-        public T Read(E env) => _reader(env);
+
+        public T Read(TEnv env) => _reader(env);
     }
 
-    public static class Reader<E>
+    public static class Reader<TEnv>
     {
-        public static IReader<E, T> Return<T>(T value) =>
+        public static IReader<TEnv, T> Return<T>(T value) =>
             Function(_ => value);
 
-        public static IReader<E, T> Function<T>(Func<E, T> reader) =>
-            new Reader<E, T>(reader);
+        public static IReader<TEnv, T> Function<T>(Func<TEnv, T> reader) =>
+            new Reader<TEnv, T>(reader);
     }
 
     public static class ReaderExtensions
     {
-        public static IReader<E, U>
-            Bind<E, T, U>(this IReader<E, T> reader, Func<T, IReader<E, U>> f) =>
-            Reader<E>.Function(e => f(reader.Read(e)).Read(e));
+        public static IReader<TEnv, TResult>
+            Bind<TEnv, T, TResult>(this IReader<TEnv, T> reader, Func<T, IReader<TEnv, TResult>> f) =>
+            Reader<TEnv>.Function(e => f(reader.Read(e)).Read(e));
 
-        public static IReader<E, U>
-            Map<E, T, U>(this IReader<E, T> reader, Func<T, U> mapper) =>
-            Reader<E>.Function(e => mapper(reader.Read(e)));
+        public static IReader<TEnv, TResult>
+            Map<TEnv, T, TResult>(this IReader<TEnv, T> reader, Func<T, TResult> mapper) =>
+            Reader<TEnv>.Function(e => mapper(reader.Read(e)));
     }
 }
 
@@ -58,15 +60,15 @@ namespace ReaderMonad.Linq
 
     public static class ReaderExtensions
     {
-        public static IReader<E, U>
-            Select<E, T, U>(this IReader<E, T> reader, Func<T, U> selector) =>
+        public static IReader<TEnv, TResult>
+            Select<TEnv, T, TResult>(this IReader<TEnv, T> reader, Func<T, TResult> selector) =>
             reader.Map(selector);
 
-        public static IReader<E, V>
-            SelectMany<E, T, U, V>(
-                this IReader<E, T> reader,
-                Func<T, IReader<E, U>> selector,
-                Func<T, U, V> resultSelector) =>
-            reader.Bind(x => selector(x).Map(y => resultSelector(x, y)));
+        public static IReader<TEnv, TResult>
+            SelectMany<TEnv, T, TSecond, TResult>(
+                this IReader<TEnv, T> reader,
+                Func<T, IReader<TEnv, TSecond>> secondSelector,
+                Func<T, TSecond, TResult> resultSelector) =>
+            reader.Bind(x => secondSelector(x).Map(y => resultSelector(x, y)));
     }
 }
