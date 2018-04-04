@@ -54,21 +54,3 @@ namespace ReaderMonad
     }
 }
 
-namespace ReaderMonad.Linq
-{
-    using System;
-
-    public static class ReaderExtensions
-    {
-        public static IReader<TEnv, TResult>
-            Select<TEnv, T, TResult>(this IReader<TEnv, T> reader, Func<T, TResult> selector) =>
-            reader.Map(selector);
-
-        public static IReader<TEnv, TResult>
-            SelectMany<TEnv, T, TSecond, TResult>(
-                this IReader<TEnv, T> reader,
-                Func<T, IReader<TEnv, TSecond>> secondSelector,
-                Func<T, TSecond, TResult> resultSelector) =>
-            reader.Bind(x => secondSelector(x).Map(y => resultSelector(x, y)));
-    }
-}
