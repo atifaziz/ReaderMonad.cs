@@ -26,14 +26,14 @@ namespace Tests
         [Fact]
         public void ReturnReturnsValue()
         {
-            Assert.Equal(42, Reader<object>.Return(42).Read(null));
+            Assert.Equal(42, Reader.Return(42).Read());
         }
 
         [Fact]
         public void FunctionInvokesFunction()
         {
             var read = false;
-            var reader = Reader<object>.Function(e =>
+            var reader = Reader.Function((object e) =>
             {
                 read = true;
                 return e;
@@ -48,7 +48,7 @@ namespace Tests
         public void FunctionWithNullFunctionThrows()
         {
             var e = Assert.Throws<ArgumentNullException>(() =>
-                Reader<object>.Function<object>(null));
+                Reader.Function<object, object>(null));
             Assert.Equal("reader", e.ParamName);
         }
 
@@ -59,9 +59,9 @@ namespace Tests
         public void Bind(int n)
         {
             var result =
-                Reader<object>.Return(n)
-                              .Bind(x => Reader<object>.Return(new { X = x, Y = x * 2 }))
-                              .Read(null);
+                Reader.Return(n)
+                      .Bind(x => Reader.Return(new { X = x, Y = x * 2 }))
+                      .Read();
 
             Assert.Equal(n, result.X);
             Assert.Equal(n * 2, result.Y);
@@ -75,9 +75,9 @@ namespace Tests
         public void Map(string str, int length)
         {
             var result =
-                Reader<object>.Return(str)
-                              .Map(s => new { Str = s, s.Length })
-                              .Read(null);
+                Reader.Return(str)
+                      .Map(s => new { Str = s, s.Length })
+                      .Read();
 
             Assert.Equal(str, result.Str);
             Assert.Equal(length, result.Length);
@@ -91,10 +91,10 @@ namespace Tests
         public void Select(string str, int length)
         {
             var reader =
-                from s in Reader<object>.Return(str)
+                from s in Reader.Return(str)
                 select new { Str = s, s.Length };
 
-            var result = reader.Read(null);
+            var result = reader.Read();
 
             Assert.Equal(str, result.Str);
             Assert.Equal(length, result.Length);
@@ -108,11 +108,11 @@ namespace Tests
         public void SelectMany(string str, int length)
         {
             var reader =
-                from s in Reader<object>.Return(str)
-                from l in Reader<object>.Return(s.Length)
+                from s in Reader.Return(str)
+                from l in Reader.Return(s.Length)
                 select new { Str = s, Length = l };
 
-            var result = reader.Read(null);
+            var result = reader.Read();
 
             Assert.Equal(str, result.Str);
             Assert.Equal(length, result.Length);

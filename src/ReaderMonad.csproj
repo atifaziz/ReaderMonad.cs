@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;netstandard1.0</TargetFrameworks>
     <VersionPrefix>0.1.0</VersionPrefix>
-    <LangVersion>7.0</LangVersion>
+    <LangVersion>7.1</LangVersion>
     <Description>Reader mondad for .NET Standard</Description>
     <PackageOutputPath>..\dist</PackageOutputPath>
     <Copyright>Copyright 2018 Atif Aziz. All rights reserved.</Copyright>

@@ -17,6 +17,7 @@
 namespace ReaderMonad
 {
     using System;
+    using Unit = System.ValueTuple;
 
     public interface IReader<in TEnv, out T>
     {
@@ -33,24 +34,30 @@ namespace ReaderMonad
         public T Read(TEnv env) => _reader(env);
     }
 
-    public static class Reader<TEnv>
+    public static class Reader
     {
-        public static IReader<TEnv, T> Return<T>(T value) =>
-            Function(_ => value);
+        public static IReader<Unit, T> Return<T>(T value) =>
+            Function((Unit _) => value);
 
-        public static IReader<TEnv, T> Function<T>(Func<TEnv, T> reader) =>
+        public static IReader<TEnv, T> Return<TEnv, T>(T value) =>
+            Function((TEnv _) => value);
+
+        public static IReader<TEnv, T> Function<TEnv, T>(Func<TEnv, T> reader) =>
             new Reader<TEnv, T>(reader);
     }
 
     public static class ReaderExtensions
     {
+        public static T Read<T>(this IReader<Unit, T> reader) =>
+            reader.Read(default);
+
         public static IReader<TEnv, TResult>
             Bind<TEnv, T, TResult>(this IReader<TEnv, T> reader, Func<T, IReader<TEnv, TResult>> f) =>
-            Reader<TEnv>.Function(e => f(reader.Read(e)).Read(e));
+            Reader.Function((TEnv e) => f(reader.Read(e)).Read(e));
 
         public static IReader<TEnv, TResult>
             Map<TEnv, T, TResult>(this IReader<TEnv, T> reader, Func<T, TResult> mapper) =>
-            Reader<TEnv>.Function(e => mapper(reader.Read(e)));
+            Reader.Function((TEnv e) => mapper(reader.Read(e)));
     }
 }
 
