@@ -100,22 +100,88 @@ namespace Tests
             Assert.Equal(length, result.Length);
         }
 
-        [Theory]
-        [InlineData("one", 3)]
-        [InlineData("three", 5)]
-        [InlineData("five", 4)]
-        [InlineData("eleven", 6)]
-        public void SelectMany(string str, int length)
+        public class SelectMany
         {
-            var reader =
-                from s in Reader.Return(str)
-                from l in Reader.Return(s.Length)
-                select new { Str = s, Length = l };
+            [Theory]
+            [InlineData("one", 3)]
+            [InlineData("three", 5)]
+            [InlineData("five", 4)]
+            [InlineData("eleven", 6)]
+            public void UnitUnit(string str, int length)
+            {
+                var reader =
+                    from s in Reader.Return(str)
+                    from l in Reader.Return(s.Length)
+                    select new { Str = s, Length = l };
 
-            var result = reader.Read();
+                var result = reader.Read();
 
-            Assert.Equal(str, result.Str);
-            Assert.Equal(length, result.Length);
+                Assert.Equal(str, result.Str);
+                Assert.Equal(length, result.Length);
+            }
+
+            [Theory]
+            [InlineData("one", 3)]
+            [InlineData("three", 5)]
+            [InlineData("five", 4)]
+            [InlineData("eleven", 6)]
+            public void EnvUnit(string str, int length)
+            {
+                var reader =
+                    from s in Reader.Return<object, string>(str)
+                    from l in Reader.Return(s.Length)
+                    from e in Reader.Env<object>()
+                    select new { Str = s, Length = l, Env = e };
+
+                var env = new object();
+                var result = reader.Read(env);
+
+                Assert.Equal(str, result.Str);
+                Assert.Equal(length, result.Length);
+                Assert.Same(env, result.Env);
+            }
+
+            [Theory]
+            [InlineData("one", 3)]
+            [InlineData("three", 5)]
+            [InlineData("five", 4)]
+            [InlineData("eleven", 6)]
+            public void UnitEnv(string str, int length)
+            {
+                var reader =
+                    from s in Reader.Return(str)
+                    from l in Reader.Return<object, int>(s.Length)
+                    from e in Reader.Env<object>()
+                    select new { Str = s, Length = l, Env = e };
+
+                var env = new object();
+                var result = reader.Read(env);
+
+                Assert.Equal(str, result.Str);
+                Assert.Equal(length, result.Length);
+                Assert.Equal(env, result.Env);
+            }
+
+            [Theory]
+            [InlineData("one", 3)]
+            [InlineData("three", 5)]
+            [InlineData("five", 4)]
+            [InlineData("eleven", 6)]
+            public void Env(string str, int length)
+            {
+                var reader =
+                    from s in Reader.Return<object, string>(str)
+                    from l in Reader.Return<object, int>(s.Length)
+                    from e in Reader.Env<object>()
+                    select new { Str = s, Length = l, Env = e };
+
+                var env = new object();
+                var result = reader.Read(env);
+
+                Assert.Equal(str, result.Str);
+                Assert.Equal(length, result.Length);
+                Assert.Equal(env, result.Env);
+            }
         }
 
         [Fact]

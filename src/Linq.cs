@@ -17,6 +17,8 @@
 namespace ReaderMonad.Linq
 {
     using System;
+    using static Reader;
+    using Unit = System.ValueTuple;
 
     public static class ReaderExtensions
     {
@@ -30,5 +32,29 @@ namespace ReaderMonad.Linq
                 Func<TFirst, IReader<TEnv, TSecond>> secondSelector,
                 Func<TFirst, TSecond, TResult> resultSelector) =>
             reader.Bind(x => secondSelector(x).Map(y => resultSelector(x, y)));
+
+        public static IReader<TEnv, TResult> SelectMany<TEnv, TFirst, TSecond, TResult>(this IReader<TEnv, TFirst> reader, Func<TFirst, IReader<Unit, TSecond>> secondSelector, Func<TFirst, TSecond, TResult> resultSelector) =>
+            Function((TEnv e) =>
+            {
+                var a = reader.Read(e);
+                var b = secondSelector(a).Read(default);
+                return resultSelector(a, b);
+            });
+
+        public static IReader<TEnv, TResult> SelectMany<TEnv, TFirst, TSecond, TResult>(this IReader<Unit, TFirst> reader, Func<TFirst, IReader<TEnv, TSecond>> secondSelector, Func<TFirst, TSecond, TResult> resultSelector) =>
+            Function((TEnv e) =>
+            {
+                var a = reader.Read(default);
+                var b = secondSelector(a).Read(e);
+                return resultSelector(a, b);
+            });
+
+        public static IReader<Unit, TResult> SelectMany<TFirst, TSecond, TResult>(this IReader<Unit, TFirst> reader, Func<TFirst, IReader<Unit, TSecond>> secondSelector, Func<TFirst, TSecond, TResult> resultSelector) =>
+            Function((Unit _) =>
+            {
+                var a = reader.Read(default);
+                var b = secondSelector(a).Read(default);
+                return resultSelector(a, b);
+            });
     }
 }
