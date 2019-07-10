@@ -17,7 +17,11 @@
 namespace Tests
 {
     using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using MoreLinq;
     using ReaderMonad;
+    using ReaderMonad.Enumerators;
     using ReaderMonad.Linq;
     using Xunit;
 
@@ -190,6 +194,186 @@ namespace Tests
             var env = new object();
             var result = Reader.Env<object>().Read(env);
             Assert.Same(env, result);
+        }
+    }
+
+    public class EnumeratorReaderTests
+    {
+        static readonly IEnumerable<int> PositiveIntegers = MoreEnumerable.Generate(1, x => checked(x + 1));
+
+        public class Read
+        {
+            [Fact]
+            public void EnumeratesSubsequentElements()
+            {
+                var result =
+                    PositiveIntegers
+                        .Read(e =>
+                            from x in e.Read()
+                            from y in e.Read()
+                            from z in e.Read()
+                            select new { X = x, Y = y, Z = z });
+
+                Assert.Equal(new { X = 1, Y = 2, Z = 3 }, result);
+            }
+
+            [Fact]
+            public void ThrowsIfSequenceHasEnded()
+            {
+                Assert.Throws<InvalidOperationException>(() =>
+                    PositiveIntegers
+                        .Take(2)
+                        .Read(e =>
+                            from x in e.Read()
+                            from y in e.Read()
+                            from z in e.Read()
+                            select 0));
+            }
+        }
+
+        [Fact]
+        public void TryRead()
+        {
+            var result =
+                PositiveIntegers
+                    .Take(2)
+                    .Read(e =>
+                        from x in e.TryRead()
+                        from y in e.TryRead()
+                        from z in e.TryRead()
+                        select new { X = x, Y = y, Z = z });
+
+            var expected = new
+            {
+                X = (true , 1),
+                Y = (true , 2),
+                Z = (false, 0),
+            };
+
+            Assert.Equal(expected, result);
+        }
+
+        [Fact]
+        public void ReadOrDefault()
+        {
+            var result =
+                PositiveIntegers
+                    .Take(2)
+                    .Read(e =>
+                        from x in e.ReadOrDefault()
+                        from y in e.ReadOrDefault()
+                        from z in e.ReadOrDefault()
+                        select new { X = x, Y = y, Z = z });
+
+            Assert.Equal(new { X = 1, Y = 2, Z = 0 }, result);
+        }
+
+        [Fact]
+        public void ReadOr()
+        {
+            var result =
+                PositiveIntegers
+                    .Take(2)
+                    .Read(e =>
+                        from x in e.ReadOr(-1)
+                        from y in e.ReadOr(-2)
+                        from z in e.ReadOr(-3)
+                        select new { X = x, Y = y, Z = z });
+
+            Assert.Equal(new { X = 1, Y = 2, Z = -3 }, result);
+        }
+
+        public class Skip
+        {
+            [Fact]
+            public void SkipsCountOfElements()
+            {
+                var result =
+                    PositiveIntegers
+                        .Take(10)
+                        .Read(e =>
+                            from s1 in e.Skip(1)
+                            from x  in e.Read()
+                            from s2 in e.Skip(0)
+                            from y  in e.Read()
+                            from s3 in e.Skip(3)
+                            from z  in e.Read()
+                            from s4 in e.Skip(100)
+                            select new
+                            {
+                                X = x, Y = y, Z = z,
+                                Skip1 = s1, Skip2 = s2, Skip3 = s3, Skip4 = s4,
+                            });
+
+                var expected = new
+                {
+                    X = 2, Y = 3, Z = 7,
+                    Skip1 = 1, Skip2 = 0, Skip3 = 3, Skip4 = 3
+                };
+
+                Assert.Equal(expected, result);
+            }
+
+            [Fact]
+            public void WithNegativeCountSkipsNothing()
+            {
+                var result =
+                    PositiveIntegers
+                        .Take(10)
+                        .Read(e =>
+                            from x in e.Read()
+                            from s in e.Skip(-1)
+                            from y in e.Read()
+                            select new { X = x, Y = y, Skips = s });
+
+                Assert.Equal(new { X = 1, Y = 2, Skips = 0 }, result);
+            }
+        }
+
+        public class ReadWhen
+        {
+            [Fact]
+            public void ReturnsElementMatchingConditionWhileSkippingMismatches()
+            {
+                var result =
+                    PositiveIntegers
+                        .Read(e =>
+                            from x in e.Read()
+                            from y in e.ReadWhen(n => n == 5)
+                            from z in e.Read()
+                            select new { X = x, Y = y, Z = z });
+
+                Assert.Equal(new { X = 1, Y = 5, Z = 6 }, result);
+            }
+
+            [Fact]
+            public void ThrowsIfSeqeuenceEndsBeforeMatchingElementIsRead()
+            {
+                Assert.Throws<InvalidOperationException>(() =>
+                    PositiveIntegers.Take(100).Read(e => e.ReadWhen(n => n == 0)));
+            }
+        }
+
+        [Fact]
+        public void ReadAll()
+        {
+            var result =
+                PositiveIntegers
+                    .Take(5)
+                    .Read(e =>
+                        from x in e.Read()
+                        from y in e.Read()
+                        from z in e.Read()
+                        from t in e.ReadAll()
+                        select new
+                        {
+                            X = x,
+                            Y = y,
+                            Z = z,
+                            Tail = (t[0], t[1])
+                        });
+
+            Assert.Equal(new { X = 1, Y = 2, Z = 3, Tail = (4, 5) }, result);
         }
     }
 }
