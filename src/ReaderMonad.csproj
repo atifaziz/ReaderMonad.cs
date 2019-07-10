@@ -11,6 +11,7 @@
     <Owners>Atif Aziz</Owners>
     <PackageProjectUrl>https://github.com/atifaziz/ReaderMonad.cs</PackageProjectUrl>
     <PackageOutputPath>..\dist</PackageOutputPath>
+    <PackageLicenseFile>COPYING.txt</PackageLicenseFile>
     <IncludeSymbols>true</IncludeSymbols>
     <IncludeSource>true</IncludeSource>
   </PropertyGroup>
@@ -24,9 +25,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="..\COPYING.txt" Link="COPYING.txt">
-      <PackagePath />
-    </Content>
+    <None Include="..\COPYING.txt" Pack="true" PackagePath="$(PackageLicenseFile)" />
   </ItemGroup>
 
   <ItemGroup>
