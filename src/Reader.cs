@@ -44,20 +44,17 @@ namespace ReaderMonad
 
         public static IReader<TEnv, T> Function<TEnv, T>(Func<TEnv, T> reader) =>
             new Reader<TEnv, T>(reader);
-    }
 
-    public static class ReaderExtensions
-    {
         public static T Read<T>(this IReader<Unit, T> reader) =>
             reader.Read(default);
 
         public static IReader<TEnv, TResult>
             Bind<TEnv, T, TResult>(this IReader<TEnv, T> reader, Func<T, IReader<TEnv, TResult>> f) =>
-            Reader.Function((TEnv e) => f(reader.Read(e)).Read(e));
+            Function((TEnv e) => f(reader.Read(e)).Read(e));
 
         public static IReader<TEnv, TResult>
             Map<TEnv, T, TResult>(this IReader<TEnv, T> reader, Func<T, TResult> mapper) =>
-            Reader.Function((TEnv e) => mapper(reader.Read(e)));
+            Function((TEnv e) => mapper(reader.Read(e)));
     }
 }
 
