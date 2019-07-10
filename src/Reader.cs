@@ -50,13 +50,13 @@ namespace ReaderMonad
 
         public static IReader<TEnv, TResult>
             Bind<TEnv, T, TResult>(this IReader<TEnv, T> reader, Func<T, IReader<TEnv, TResult>> f) =>
-            Function((TEnv e) => f(reader.Read(e)).Read(e));
+            Function((TEnv env) => f(reader.Read(env)).Read(env));
 
         public static IReader<TEnv, TResult>
             Map<TEnv, T, TResult>(this IReader<TEnv, T> reader, Func<T, TResult> mapper) =>
-            Function((TEnv e) => mapper(reader.Read(e)));
+            Function((TEnv env) => mapper(reader.Read(env)));
 
         public static IReader<T, T> Env<T>() =>
-            Function((T e) => e);
+            Function((T env) => env);
     }
 }
