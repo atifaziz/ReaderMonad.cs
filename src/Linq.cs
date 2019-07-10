@@ -25,10 +25,10 @@ namespace ReaderMonad.Linq
             reader.Map(selector);
 
         public static IReader<TEnv, TResult>
-            SelectMany<TEnv, T, TSecond, TResult>(
-                this IReader<TEnv, T> reader,
-                Func<T, IReader<TEnv, TSecond>> secondSelector,
-                Func<T, TSecond, TResult> resultSelector) =>
+            SelectMany<TEnv, TFirst, TSecond, TResult>(
+                this IReader<TEnv, TFirst> reader,
+                Func<TFirst, IReader<TEnv, TSecond>> secondSelector,
+                Func<TFirst, TSecond, TResult> resultSelector) =>
             reader.Bind(x => secondSelector(x).Map(y => resultSelector(x, y)));
     }
 }
