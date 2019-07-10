@@ -55,6 +55,8 @@ namespace ReaderMonad
         public static IReader<TEnv, TResult>
             Map<TEnv, T, TResult>(this IReader<TEnv, T> reader, Func<T, TResult> mapper) =>
             Function((TEnv e) => mapper(reader.Read(e)));
+
+        public static IReader<T, T> Env<T>() =>
+            Function((T e) => e);
     }
 }
-

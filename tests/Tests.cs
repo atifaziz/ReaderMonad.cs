@@ -117,5 +117,13 @@ namespace Tests
             Assert.Equal(str, result.Str);
             Assert.Equal(length, result.Length);
         }
+
+        [Fact]
+        public void EnvReturnsEnvironment()
+        {
+            var env = new object();
+            var result = Reader.Env<object>().Read(env);
+            Assert.Same(env, result);
+        }
     }
 }
