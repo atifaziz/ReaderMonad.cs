@@ -330,27 +330,34 @@ namespace Tests
             }
         }
 
-        public class ReadWhen
+        public class SkipWhile
         {
             [Fact]
-            public void ReturnsElementMatchingConditionWhileSkippingMismatches()
+            public void SkipsWhileConditionIsBeingMet()
             {
                 var result =
                     PositiveIntegers
                         .Read(e =>
                             from x in e.Read()
-                            from y in e.ReadWhen(n => n == 5)
-                            from z in e.Read()
-                            select new { X = x, Y = y, Z = z });
+                            from c in e.SkipWhile(n => n < 5)
+                            from y in e.Read()
+                            select new { X = x, Y = y, SkipCount = c });
 
-                Assert.Equal(new { X = 1, Y = 5, Z = 6 }, result);
+                Assert.Equal(new { X = 1, Y = 5, SkipCount = 3 }, result);
             }
 
             [Fact]
-            public void ThrowsIfSeqeuenceEndsBeforeMatchingElementIsRead()
+            public void SkipsAllWhenAllMatchCondition()
             {
-                Assert.Throws<InvalidOperationException>(() =>
-                    PositiveIntegers.Take(100).Read(e => e.ReadWhen(n => n == 0)));
+                var result =
+                    PositiveIntegers
+                        .Take(100)
+                        .Read(e =>
+                            from c in e.SkipWhile(n => n != 0)
+                            from x in e.TryRead()
+                            select new { X = x, SkipCount = c });
+
+                Assert.Equal(new { X = (false, 0), SkipCount = 100 }, result);
             }
         }
 
@@ -391,11 +398,10 @@ namespace Tests
                             X = x,
                             Y = y,
                             Z = z,
-                            Matches = (m.Matches[0], m.Matches[1], m.Matches[2]),
-                            m.Mismatch
+                            Matches = (m[0], m[1], m[2]),
                         });
 
-            Assert.Equal(new { X = 1, Y = 2, Z = 7, Matches = (3, 4, 5), Mismatch = (true, 6) }, result);
+            Assert.Equal(new { X = 1, Y = 2, Z = 6, Matches = (3, 4, 5) }, result);
         }
     }
 }
