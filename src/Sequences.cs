@@ -134,16 +134,9 @@ namespace ReaderMonad.Enumerators
                 select e.HasValue ? e.Value : default;
 
             public static readonly IReader<IEnumeratorReader<T>, List<T>> ReadAll =
-                Function((IEnumeratorReader<T> e) =>
-                {
-                    var list = new List<T>();
-                    while (e.TrySeek(out var item))
-                    {
-                        e.MoveNext();
-                        list.Add(item);
-                    }
-                    return list;
-                });
+                Instance.Aggregate(new List<T>(),
+                                   (list, item) => { list.Add(item); return list; },
+                                   list => list);
         }
 
         public IReader<IEnumeratorReader<T>, T> Read() => Free.Read;
@@ -211,6 +204,21 @@ namespace ReaderMonad.Enumerators
                     e.MoveNext();
                 }
                 return list;
+            });
+
+        public IReader<IEnumeratorReader<T>, TResult>
+            Aggregate<TState, TResult>(TState seed,
+                                       Func<TState, T, TState> accumulator,
+                                       Func<TState, TResult> resultSelector) =>
+            Function((IEnumeratorReader<T> e) =>
+            {
+                var state = seed;
+                while (e.TrySeek(out var item))
+                {
+                    e.MoveNext();
+                    state = accumulator(state, item);
+                }
+                return resultSelector(state);
             });
     }
 }
