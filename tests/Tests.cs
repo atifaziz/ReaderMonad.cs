@@ -375,5 +375,27 @@ namespace Tests
 
             Assert.Equal(new { X = 1, Y = 2, Z = 3, Tail = (4, 5) }, result);
         }
+
+        [Fact]
+        public void ReadWhile()
+        {
+            var result =
+                PositiveIntegers
+                    .Read(e =>
+                        from x in e.Read()
+                        from y in e.Read()
+                        from m in e.ReadWhile(n => n <= 5)
+                        from z in e.Read()
+                        select new
+                        {
+                            X = x,
+                            Y = y,
+                            Z = z,
+                            Matches = (m.Matches[0], m.Matches[1], m.Matches[2]),
+                            m.Mismatch
+                        });
+
+            Assert.Equal(new { X = 1, Y = 2, Z = 7, Matches = (3, 4, 5), Mismatch = (true, 6) }, result);
+        }
     }
 }
