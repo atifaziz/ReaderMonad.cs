@@ -160,32 +160,17 @@ namespace ReaderMonad.Enumerators
         }
 
         static IReader<IEnumeratorReader<T>, int> SkipImpl(int count) =>
-            Function((IEnumeratorReader<T> e) =>
-            {
-                var read = 0;
-                for (; count > 0 && e.TrySeek(out _); count--)
-                {
-                    e.MoveNext();
-                    read++;
-                }
-                return read;
-            });
+            AggregateWhile((Remaining: count, Skipped: 0),
+                           (cnt, _) => cnt.Remaining > 0 ? (true, (cnt.Remaining - 1, cnt.Skipped + 1))
+                                                         : default,
+                           cnt => cnt.Skipped);
 
         public IReader<IEnumeratorReader<T>, int> SkipWhile(Func<T, bool> predicate) =>
             SkipWhile((e, _) => predicate(e));
 
         public IReader<IEnumeratorReader<T>, int> SkipWhile(Func<T, int, bool> predicate) =>
-            Function((IEnumeratorReader<T> e) =>
-            {
-                var i = 0;
-                for (; e.TrySeek(out var item); i++)
-                {
-                    if (!predicate(item, i))
-                        break;
-                    e.MoveNext();
-                }
-                return i;
-            });
+            AggregateWhile(0, (count, item) => predicate(item, count) ? (true, count + 1) : default,
+                           count => count);
 
         public IReader<IEnumeratorReader<T>, List<T>> ReadAll() => Free.ReadAll;
 
@@ -193,30 +178,37 @@ namespace ReaderMonad.Enumerators
             ReadWhile((e, _) => predicate(e));
 
         public IReader<IEnumeratorReader<T>, List<T>> ReadWhile(Func<T, int, bool> predicate) =>
-            Function((IEnumeratorReader<T> e) =>
-            {
-                var list = new List<T>();
-                for (var i = 0; e.TrySeek(out var item); i++)
+            AggregateWhile(
+                new List<T>(),
+                (list, item) =>
                 {
-                    if (!predicate(item, i))
-                        break;
+                    if (!predicate(item, list.Count))
+                        return default;
                     list.Add(item);
-                    e.MoveNext();
-                }
-                return list;
-            });
+                    return (true, list);
+                },
+                list => list);
 
         public IReader<IEnumeratorReader<T>, TResult>
             Aggregate<TState, TResult>(TState seed,
                                        Func<TState, T, TState> accumulator,
                                        Func<TState, TResult> resultSelector) =>
+            AggregateWhile(seed, (state, item) => (true, accumulator(state, item)), resultSelector);
+
+        static IReader<IEnumeratorReader<T>, TResult>
+            AggregateWhile<TState, TResult>(TState seed,
+                                            Func<TState, T, (bool, TState)> accumulator,
+                                            Func<TState, TResult> resultSelector) =>
             Function((IEnumeratorReader<T> e) =>
             {
                 var state = seed;
                 while (e.TrySeek(out var item))
                 {
+                    var (cont, ns) = accumulator(state, item);
+                    if (!cont)
+                        break;
+                    state = ns;
                     e.MoveNext();
-                    state = accumulator(state, item);
                 }
                 return resultSelector(state);
             });
