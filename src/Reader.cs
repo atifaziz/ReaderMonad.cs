@@ -57,6 +57,11 @@ namespace ReaderMonad
             Function((TEnv env) => mapper(reader.Read(env)));
 
         public static IReader<T, T> Env<T>() =>
-            Function((T env) => env);
+            EnvReader<T>.Instance;
+
+        static class EnvReader<T>
+        {
+            public static readonly IReader<T, T> Instance = Function((T env) => env);
+        }
     }
 }
