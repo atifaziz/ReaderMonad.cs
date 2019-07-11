@@ -97,40 +97,77 @@ namespace ReaderMonad.Enumerators
         }
     }
 
-    public static class EnumeratorReader
+    public static class EnumerableReader
     {
         public static TResult Read<T, TResult>(
             this IEnumerable<T> source,
-            Func<IReader<IEnumeratorReader<T>, IEnumeratorReader<T>>, IReader<IEnumeratorReader<T>, TResult>> reader)
+            Func<EnumeratorOperations<T>, IReader<IEnumeratorReader<T>, TResult>> reader)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (reader == null) throw new ArgumentNullException(nameof(reader));
             using (var e = source.GetEnumerator())
-                return reader(Env<IEnumeratorReader<T>>()).Read(new EnumeratorReader<T>(e));
+                return reader(EnumeratorOperations<T>.Instance).Read(new EnumeratorReader<T>(e));
+        }
+    }
+
+    public sealed class EnumeratorOperations<T>
+    {
+        public static readonly EnumeratorOperations<T> Instance = new EnumeratorOperations<T>();
+
+        static class Free
+        {
+            public static readonly IReader<IEnumeratorReader<T>, (bool HasValue, T Value)> TryRead =
+                Function((IEnumeratorReader<T> e) =>
+                {
+                    if (!e.TrySeek(out var item))
+                        return default;
+                    e.MoveNext();
+                    return (true, item);
+                });
+
+            public static readonly IReader<IEnumeratorReader<T>, T> Read =
+                from e in TryRead
+                select e.HasValue ? e.Value : throw new InvalidOperationException();
+
+            public static readonly IReader<IEnumeratorReader<T>, T> ReadOrDefault =
+                from e in TryRead
+                select e.HasValue ? e.Value : default;
+
+            public static readonly IReader<IEnumeratorReader<T>, List<T>> ReadAll =
+                Function((IEnumeratorReader<T> e) =>
+                {
+                    var list = new List<T>();
+                    while (e.TrySeek(out var item))
+                    {
+                        e.MoveNext();
+                        list.Add(item);
+                    }
+                    return list;
+                });
         }
 
-        public static IReader<IEnumeratorReader<T>, T> Read<T>(this IReader<IEnumeratorReader<T>, IEnumeratorReader<T>> reader) =>
-            from e in reader.TryRead()
-            select e.HasValue ? e.Value : throw new InvalidOperationException();
+        public IReader<IEnumeratorReader<T>, T> Read() => Free.Read;
 
-        public static IReader<IEnumeratorReader<T>, (bool HasValue, T Value)> TryRead<T>(this IReader<IEnumeratorReader<T>, IEnumeratorReader<T>> reader) =>
-            reader.Select(e =>
-            {
-                if (!e.TrySeek(out var item))
-                    return default;
-                e.MoveNext();
-                return (true, item);
-            });
+        public IReader<IEnumeratorReader<T>, (bool HasValue, T Value)> TryRead() => Free.TryRead;
 
-        public static IReader<IEnumeratorReader<T>, T> ReadOrDefault<T>(this IReader<IEnumeratorReader<T>, IEnumeratorReader<T>> reader) =>
-            reader.ReadOr(default);
+        public IReader<IEnumeratorReader<T>, T> ReadOrDefault() => Free.ReadOrDefault;
 
-        public static IReader<IEnumeratorReader<T>, T> ReadOr<T>(this IReader<IEnumeratorReader<T>, IEnumeratorReader<T>> reader, T defaultValue) =>
-            from item in reader.TryRead()
+        public IReader<IEnumeratorReader<T>, T> ReadOr(T defaultValue) =>
+            from item in TryRead()
             select item.HasValue ? item.Value : defaultValue;
 
-        public static IReader<IEnumeratorReader<T>, int> Skip<T>(this IReader<IEnumeratorReader<T>, IEnumeratorReader<T>> reader, int count) =>
-            reader.Map(e =>
+        static readonly IReader<IEnumeratorReader<T>, int>[] SkipCountCache = new IReader<IEnumeratorReader<T>, int>[10];
+
+        public IReader<IEnumeratorReader<T>, int> Skip(int count)
+        {
+            var i = Math.Max(0, count);
+            return i < SkipCountCache.Length
+                 ? SkipCountCache[i] ?? (SkipCountCache[i] = SkipImpl(count))
+                 : SkipImpl(count);
+        }
+
+        static IReader<IEnumeratorReader<T>, int> SkipImpl(int count) =>
+            Function((IEnumeratorReader<T> e) =>
             {
                 var read = 0;
                 for (; count > 0 && e.TrySeek(out _); count--)
@@ -141,11 +178,11 @@ namespace ReaderMonad.Enumerators
                 return read;
             });
 
-        public static IReader<IEnumeratorReader<T>, int> SkipWhile<T>(this IReader<IEnumeratorReader<T>, IEnumeratorReader<T>> reader, Func<T, bool> predicate) =>
-            reader.SkipWhile((e, _) => predicate(e));
+        public IReader<IEnumeratorReader<T>, int> SkipWhile(Func<T, bool> predicate) =>
+            SkipWhile((e, _) => predicate(e));
 
-        public static IReader<IEnumeratorReader<T>, int> SkipWhile<T>(this IReader<IEnumeratorReader<T>, IEnumeratorReader<T>> reader, Func<T, int, bool> predicate) =>
-            reader.Select(e =>
+        public IReader<IEnumeratorReader<T>, int> SkipWhile(Func<T, int, bool> predicate) =>
+            Function((IEnumeratorReader<T> e) =>
             {
                 var i = 0;
                 for (; e.TrySeek(out var item); i++)
@@ -157,27 +194,13 @@ namespace ReaderMonad.Enumerators
                 return i;
             });
 
-        public static IReader<IEnumeratorReader<T>, List<T>> ReadAll<T>(this IReader<IEnumeratorReader<T>, IEnumeratorReader<T>> reader) =>
-            reader.Select(e =>
-            {
-                var list = new List<T>();
-                while (e.TrySeek(out var item))
-                {
-                    e.MoveNext();
-                    list.Add(item);
-                }
-                return list;
-            });
+        public IReader<IEnumeratorReader<T>, List<T>> ReadAll() => Free.ReadAll;
 
-        public static IReader<IEnumeratorReader<T>, List<T>>
-            ReadWhile<T>(this IReader<IEnumeratorReader<T>, IEnumeratorReader<T>> reader,
-                         Func<T, bool> predicate) =>
-            reader.ReadWhile((e, _) => predicate(e));
+        public IReader<IEnumeratorReader<T>, List<T>> ReadWhile(Func<T, bool> predicate) =>
+            ReadWhile((e, _) => predicate(e));
 
-        public static IReader<IEnumeratorReader<T>, List<T>>
-            ReadWhile<T>(this IReader<IEnumeratorReader<T>, IEnumeratorReader<T>> reader,
-                         Func<T, int, bool> predicate) =>
-            reader.Select(e =>
+        public IReader<IEnumeratorReader<T>, List<T>> ReadWhile(Func<T, int, bool> predicate) =>
+            Function((IEnumeratorReader<T> e) =>
             {
                 var list = new List<T>();
                 for (var i = 0; e.TrySeek(out var item); i++)
