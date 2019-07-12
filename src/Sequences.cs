@@ -23,7 +23,7 @@ namespace ReaderMonad.Enumerators
 
     public interface IEnumeratorReader<T> : IDisposable
     {
-        bool TrySeek(out T value);
+        bool TryPeek(out T value);
         void MoveNext();
     }
 
@@ -43,7 +43,7 @@ namespace ReaderMonad.Enumerators
                 throw new ObjectDisposedException(nameof(EnumeratorReader<T>));
         }
 
-        public bool TrySeek(out T value)
+        public bool TryPeek(out T value)
         {
             ThrowIfDisposed();
 
@@ -119,7 +119,7 @@ namespace ReaderMonad.Enumerators
             public static readonly IReader<IEnumeratorReader<T>, (bool HasValue, T Value)> TryRead =
                 Function((IEnumeratorReader<T> e) =>
                 {
-                    if (!e.TrySeek(out var item))
+                    if (!e.TryPeek(out var item))
                         return default;
                     e.MoveNext();
                     return (true, item);
@@ -202,7 +202,7 @@ namespace ReaderMonad.Enumerators
             Function((IEnumeratorReader<T> e) =>
             {
                 var state = seed;
-                while (e.TrySeek(out var item))
+                while (e.TryPeek(out var item))
                 {
                     var (cont, ns) = accumulator(state, item);
                     if (!cont)
