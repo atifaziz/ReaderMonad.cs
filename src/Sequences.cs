@@ -110,7 +110,7 @@ namespace ReaderMonad.Enumerators
     {
         public static readonly EnumeratorOperations<T> Instance = new EnumeratorOperations<T>();
 
-        static class Free
+        static class Cache
         {
             public static readonly IReader<IEnumeratorReader<T>, (bool HasValue, T Value)> TryRead =
                 Function((IEnumeratorReader<T> e) =>
@@ -135,11 +135,11 @@ namespace ReaderMonad.Enumerators
                                    list => list);
         }
 
-        public IReader<IEnumeratorReader<T>, T> Read() => Free.Read;
+        public IReader<IEnumeratorReader<T>, T> Read() => Cache.Read;
 
-        public IReader<IEnumeratorReader<T>, (bool HasValue, T Value)> TryRead() => Free.TryRead;
+        public IReader<IEnumeratorReader<T>, (bool HasValue, T Value)> TryRead() => Cache.TryRead;
 
-        public IReader<IEnumeratorReader<T>, T> ReadOrDefault() => Free.ReadOrDefault;
+        public IReader<IEnumeratorReader<T>, T> ReadOrDefault() => Cache.ReadOrDefault;
 
         public IReader<IEnumeratorReader<T>, T> ReadOr(T defaultValue) =>
             from item in TryRead()
@@ -168,7 +168,7 @@ namespace ReaderMonad.Enumerators
             AggregateWhile(0, (count, item) => predicate(item, count) ? (true, count + 1) : default,
                            count => count);
 
-        public IReader<IEnumeratorReader<T>, List<T>> ReadAll() => Free.ReadAll;
+        public IReader<IEnumeratorReader<T>, List<T>> ReadAll() => Cache.ReadAll;
 
         public IReader<IEnumeratorReader<T>, List<T>> ReadWhile(Func<T, bool> predicate) =>
             ReadWhile((e, _) => predicate(e));
