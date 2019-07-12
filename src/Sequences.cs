@@ -133,6 +133,17 @@ namespace ReaderMonad.Enumerators
                 Instance.Aggregate(new List<T>(),
                                    (list, item) => { list.Add(item); return list; },
                                    list => list);
+
+            static readonly IReader<IEnumeratorReader<T>, int>[] SkipByCount =
+                new IReader<IEnumeratorReader<T>, int>[10];
+
+            public static IReader<IEnumeratorReader<T>, int> Skip(int count)
+            {
+                var i = Math.Max(0, count);
+                return i < SkipByCount.Length
+                     ? SkipByCount[i] ??= SkipImpl(count)
+                     : null;
+            }
         }
 
         public IReader<IEnumeratorReader<T>, T> Read() => Cache.Read;
@@ -145,15 +156,8 @@ namespace ReaderMonad.Enumerators
             from item in TryRead()
             select item.HasValue ? item.Value : defaultValue;
 
-        static readonly IReader<IEnumeratorReader<T>, int>[] SkipCountCache = new IReader<IEnumeratorReader<T>, int>[10];
-
-        public IReader<IEnumeratorReader<T>, int> Skip(int count)
-        {
-            var i = Math.Max(0, count);
-            return i < SkipCountCache.Length
-                 ? SkipCountCache[i] ??= SkipImpl(count)
-                 : SkipImpl(count);
-        }
+        public IReader<IEnumeratorReader<T>, int> Skip(int count) =>
+            Cache.Skip(count) is IReader<IEnumeratorReader<T>, int> cached ? cached : SkipImpl(count);
 
         static IReader<IEnumeratorReader<T>, int> SkipImpl(int count) =>
             AggregateWhile((Remaining: count, Skipped: 0),
