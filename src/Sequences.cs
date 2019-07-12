@@ -151,7 +151,7 @@ namespace ReaderMonad.Enumerators
         {
             var i = Math.Max(0, count);
             return i < SkipCountCache.Length
-                 ? SkipCountCache[i] ?? (SkipCountCache[i] = SkipImpl(count))
+                 ? SkipCountCache[i] ??= SkipImpl(count)
                  : SkipImpl(count);
         }
 
