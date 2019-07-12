@@ -23,38 +23,79 @@ namespace ReaderMonad.Linq
     public static class ReaderExtensions
     {
         public static IReader<TEnv, TResult>
-            Select<TEnv, T, TResult>(this IReader<TEnv, T> reader, Func<T, TResult> selector) =>
-            reader.Map(selector);
+            Select<TEnv, T, TResult>(this IReader<TEnv, T> reader, Func<T, TResult> selector)
+        {
+            if (reader == null) throw new ArgumentNullException(nameof(reader));
+            if (selector == null) throw new ArgumentNullException(nameof(selector));
+
+            return reader.Map(selector);
+        }
 
         public static IReader<TEnv, TResult>
             SelectMany<TEnv, TFirst, TSecond, TResult>(
                 this IReader<TEnv, TFirst> reader,
                 Func<TFirst, IReader<TEnv, TSecond>> secondSelector,
-                Func<TFirst, TSecond, TResult> resultSelector) =>
-            reader.Bind(x => secondSelector(x).Map(y => resultSelector(x, y)));
+                Func<TFirst, TSecond, TResult> resultSelector)
+        {
+            if (reader == null) throw new ArgumentNullException(nameof(reader));
+            if (secondSelector == null) throw new ArgumentNullException(nameof(secondSelector));
+            if (resultSelector == null) throw new ArgumentNullException(nameof(resultSelector));
 
-        public static IReader<TEnv, TResult> SelectMany<TEnv, TFirst, TSecond, TResult>(this IReader<TEnv, TFirst> reader, Func<TFirst, IReader<Unit, TSecond>> secondSelector, Func<TFirst, TSecond, TResult> resultSelector) =>
-            Function((TEnv e) =>
+            return reader.Bind(x => secondSelector(x).Map(y => resultSelector(x, y)));
+        }
+
+        public static IReader<TEnv, TResult>
+            SelectMany<TEnv, TFirst, TSecond, TResult>(
+                this IReader<TEnv, TFirst> reader,
+                Func<TFirst, IReader<Unit, TSecond>> secondSelector,
+                Func<TFirst, TSecond, TResult> resultSelector)
+        {
+            if (reader == null) throw new ArgumentNullException(nameof(reader));
+            if (secondSelector == null) throw new ArgumentNullException(nameof(secondSelector));
+            if (resultSelector == null) throw new ArgumentNullException(nameof(resultSelector));
+
+            return Function((TEnv e) =>
             {
                 var a = reader.Read(e);
                 var b = secondSelector(a).Read(default);
                 return resultSelector(a, b);
             });
+        }
 
-        public static IReader<TEnv, TResult> SelectMany<TEnv, TFirst, TSecond, TResult>(this IReader<Unit, TFirst> reader, Func<TFirst, IReader<TEnv, TSecond>> secondSelector, Func<TFirst, TSecond, TResult> resultSelector) =>
-            Function((TEnv e) =>
+        public static IReader<TEnv, TResult>
+            SelectMany<TEnv, TFirst, TSecond, TResult>(
+                this IReader<Unit, TFirst> reader,
+                Func<TFirst, IReader<TEnv, TSecond>> secondSelector,
+                Func<TFirst, TSecond, TResult> resultSelector)
+        {
+            if (reader == null) throw new ArgumentNullException(nameof(reader));
+            if (secondSelector == null) throw new ArgumentNullException(nameof(secondSelector));
+            if (resultSelector == null) throw new ArgumentNullException(nameof(resultSelector));
+
+            return Function((TEnv e) =>
             {
                 var a = reader.Read(default);
                 var b = secondSelector(a).Read(e);
                 return resultSelector(a, b);
             });
+        }
 
-        public static IReader<Unit, TResult> SelectMany<TFirst, TSecond, TResult>(this IReader<Unit, TFirst> reader, Func<TFirst, IReader<Unit, TSecond>> secondSelector, Func<TFirst, TSecond, TResult> resultSelector) =>
-            Function((Unit _) =>
+        public static IReader<Unit, TResult>
+            SelectMany<TFirst, TSecond, TResult>(
+                this IReader<Unit, TFirst> reader,
+                Func<TFirst, IReader<Unit, TSecond>> secondSelector,
+                Func<TFirst, TSecond, TResult> resultSelector)
+        {
+            if (reader == null) throw new ArgumentNullException(nameof(reader));
+            if (secondSelector == null) throw new ArgumentNullException(nameof(secondSelector));
+            if (resultSelector == null) throw new ArgumentNullException(nameof(resultSelector));
+
+            return Function((Unit _) =>
             {
                 var a = reader.Read(default);
                 var b = secondSelector(a).Read(default);
                 return resultSelector(a, b);
             });
+        }
     }
 }

@@ -46,15 +46,26 @@ namespace ReaderMonad
             new Reader<TEnv, T>(reader);
 
         public static T Read<T>(this IReader<Unit, T> reader) =>
-            reader.Read(default);
+            reader != null ? reader.Read(default)
+                           : throw new ArgumentNullException(nameof(reader));
 
         public static IReader<TEnv, TResult>
-            Bind<TEnv, T, TResult>(this IReader<TEnv, T> reader, Func<T, IReader<TEnv, TResult>> f) =>
-            Function((TEnv env) => f(reader.Read(env)).Read(env));
+            Bind<TEnv, T, TResult>(this IReader<TEnv, T> reader, Func<T, IReader<TEnv, TResult>> function)
+        {
+            if (reader == null) throw new ArgumentNullException(nameof(reader));
+            if (function == null) throw new ArgumentNullException(nameof(function));
+
+            return Function((TEnv env) => function(reader.Read(env)).Read(env));
+        }
 
         public static IReader<TEnv, TResult>
-            Map<TEnv, T, TResult>(this IReader<TEnv, T> reader, Func<T, TResult> mapper) =>
-            Function((TEnv env) => mapper(reader.Read(env)));
+            Map<TEnv, T, TResult>(this IReader<TEnv, T> reader, Func<T, TResult> mapper)
+        {
+            if (reader == null) throw new ArgumentNullException(nameof(reader));
+            if (mapper == null) throw new ArgumentNullException(nameof(mapper));
+
+            return Function((TEnv env) => mapper(reader.Read(env)));
+        }
 
         public static IReader<T, T> Env<T>() =>
             EnvReader<T>.Instance;
