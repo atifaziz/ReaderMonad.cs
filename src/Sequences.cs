@@ -31,8 +31,7 @@ namespace ReaderMonad.Enumerators
     {
         bool _disposed;
         IEnumerator<T> _enumerator;
-        bool _hasCurrent;
-        T _current;
+        (bool, T) _current;
 
         public EnumeratorReader(IEnumerator<T> enumerator) =>
             _enumerator = enumerator ?? throw new ArgumentNullException(nameof(enumerator));
@@ -47,9 +46,9 @@ namespace ReaderMonad.Enumerators
         {
             ThrowIfDisposed();
 
-            if (_hasCurrent)
+            if (_current is (true, var current))
             {
-                value = _current;
+                value = current;
                 return true;
             }
 
@@ -57,15 +56,13 @@ namespace ReaderMonad.Enumerators
             {
                 if (e.MoveNext())
                 {
-                    _hasCurrent = true;
-                    value = _current = e.Current;
+                    _current = (true, value = e.Current);
                     return true;
                 }
                 else
                 {
                     e.Dispose();
                     _enumerator = default;
-                    _hasCurrent = false;
                 }
             }
 
@@ -77,7 +74,6 @@ namespace ReaderMonad.Enumerators
         public void MoveNext()
         {
             ThrowIfDisposed();
-            _hasCurrent = false;
             _current = default;
         }
 
@@ -90,7 +86,6 @@ namespace ReaderMonad.Enumerators
 
             _disposed = true;
             _enumerator = default;
-            _hasCurrent = false;
             _current = default;
 
             e.Dispose();
