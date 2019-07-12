@@ -100,8 +100,9 @@ namespace ReaderMonad.Enumerators
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (reader == null) throw new ArgumentNullException(nameof(reader));
-            using (var e = source.GetEnumerator())
-                return reader(EnumeratorOperations<T>.Instance).Read(new EnumeratorReader<T>(e));
+
+            using var e = source.GetEnumerator();
+            return reader(EnumeratorOperations<T>.Instance).Read(new EnumeratorReader<T>(e));
         }
     }
 
