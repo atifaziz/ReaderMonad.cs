@@ -1,7 +1,7 @@
 # ReaderMonad
 
 ReaderMonad is a .NET Standard library that provides the generic abstractions,
-types and an implementation for the [reader monad][ReaderM], somtimes also
+types and an implementation for the [reader monad][ReaderM], sometimes also
 called the _environment monad_.
 
 
