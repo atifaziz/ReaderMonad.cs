@@ -36,27 +36,12 @@ namespace ReaderMonad
 
     public static class Reader
     {
-        public static IReader<Unit, T> Return<T>(T value) =>
-            Function((Unit _) => value);
-
-        public static IReader<TEnv, T> Return<TEnv, T>(T value) =>
-            Function((TEnv _) => value);
+        // Factory
 
         public static IReader<TEnv, T> Function<TEnv, T>(Func<TEnv, T> reader) =>
             new Reader<TEnv, T>(reader);
 
-        public static T Read<T>(this IReader<Unit, T> reader) =>
-            reader != null ? reader.Read(default)
-                           : throw new ArgumentNullException(nameof(reader));
-
-        public static IReader<TEnv, TResult>
-            Bind<TEnv, T, TResult>(this IReader<TEnv, T> reader, Func<T, IReader<TEnv, TResult>> function)
-        {
-            if (reader == null) throw new ArgumentNullException(nameof(reader));
-            if (function == null) throw new ArgumentNullException(nameof(function));
-
-            return Function((TEnv env) => function(reader.Read(env)).Read(env));
-        }
+        // Functor
 
         public static IReader<TEnv, TResult>
             Map<TEnv, T, TResult>(this IReader<TEnv, T> reader, Func<T, TResult> mapper)
@@ -67,6 +52,25 @@ namespace ReaderMonad
             return Function((TEnv env) => mapper(reader.Read(env)));
         }
 
+        // Monad
+
+        public static IReader<Unit, T> Return<T>(T value) =>
+            Function((Unit _) => value);
+
+        public static IReader<TEnv, T> Return<TEnv, T>(T value) =>
+            Function((TEnv _) => value);
+
+        public static IReader<TEnv, TResult>
+            Bind<TEnv, T, TResult>(this IReader<TEnv, T> reader, Func<T, IReader<TEnv, TResult>> function)
+        {
+            if (reader == null) throw new ArgumentNullException(nameof(reader));
+            if (function == null) throw new ArgumentNullException(nameof(function));
+
+            return Function((TEnv env) => function(reader.Read(env)).Read(env));
+        }
+
+        // Others
+
         public static IReader<T, T> Env<T>() =>
             EnvReader<T>.Instance;
 
@@ -74,5 +78,9 @@ namespace ReaderMonad
         {
             public static readonly IReader<T, T> Instance = Function((T env) => env);
         }
+
+        public static T Read<T>(this IReader<Unit, T> reader) =>
+            reader != null ? reader.Read(default)
+                           : throw new ArgumentNullException(nameof(reader));
     }
 }
